@@ -37,17 +37,6 @@ export function chatFromNotification(body: NotificationBody): Chat | null {
   };
 }
 
-/**
- * Статус исходящего сообщения: основной источник — statusMessage, но GREEN-API отдаёт ещё
- * недокументированный isRead, и он точнее, когда отслеживание статусов инстансом отключено.
- */
-function historyStatus(item: HistoryMessage): MessageStatus {
-  if (item.isRead) {
-    return 'read';
-  }
-  return MESSAGE_STATUSES[item.statusMessage ?? ''] ?? 'sent';
-}
-
 /** Из ответа GetChatHistory оставляем только текстовые сообщения, от старых к новым. */
 export function historyToMessages(history: HistoryMessage[]): Message[] {
   return history
@@ -64,7 +53,9 @@ export function historyToMessages(history: HistoryMessage[]): Message[] {
       senderName: item.type === 'incoming'
         ? item.senderContactName || item.senderName
         : undefined,
-      status: item.type === 'incoming' ? undefined : historyStatus(item),
+      status: item.type === 'incoming'
+        ? undefined
+        : (MESSAGE_STATUSES[item.statusMessage ?? ''] ?? 'sent') as MessageStatus,
     }))
     .sort((a, b) => a.timestamp - b.timestamp);
 }

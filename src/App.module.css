@@ -6,20 +6,24 @@
   background: var(--bg);
 }
 
-.centered {
-  padding: 24px 16px;
-}
-
+/* Окно фиксируется по высоте экрана: прокручиваются только списки внутри, страница — нет. */
 .app {
+  height: 100dvh;
+  overflow: hidden;
   justify-content: center;
   align-items: stretch;
+}
+
+.centered {
+  padding: 24px 16px;
 }
 
 .window {
   display: flex;
   flex-direction: column;
   width: min(1040px, 100%);
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 0;
   background: var(--bg);
   border-inline: 1px solid var(--border);
 }
@@ -77,6 +81,7 @@
 .sidebar {
   flex: none;
   width: 320px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
