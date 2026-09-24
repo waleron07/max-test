@@ -220,7 +220,6 @@ export default function App() {
     setActiveChatId(chat.chatId);
     setChatError(null);
     setUnread((prev) => ({ ...prev, [chat.chatId]: 0 }));
-    void loadHistory(chat.chatId);
   }
 
   /** История подгружается один раз на чат: дальше список пополняют уведомления. */
@@ -250,6 +249,14 @@ export default function App() {
       setLoadingHistoryFor((prev) => (prev === chatId ? null : prev));
     }
   }
+
+  // Эффект, а не вызов из обработчика: история грузится при любом способе открытия чата.
+  useEffect(() => {
+    if (client && activeChatId && !loadedHistories[activeChatId]) {
+      void loadHistory(activeChatId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, activeChatId, loadedHistories]);
 
   async function handleOpenChat(phone: string) {
     if (!client || isOpeningChat) {
