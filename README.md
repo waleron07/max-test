@@ -8,7 +8,8 @@
 - ввод номера как в MAX: выбор страны с флагом и телефонным кодом, форматирование национальной части по маске;
 - проверка номера получателя через `CheckAccount` перед открытием чата: если аккаунта в MAX нет, чат не открывается, а пользователь видит понятное сообщение;
 - канонический числовой `chatId` берётся из ответа `CheckAccount`, имя контакта для шапки — из `GetContactInfo`;
-- отправка текстовых сообщений методом `SendMessage` с мгновенным показом сообщения и статусом отправки;
+- отправка текстовых сообщений методом `SendMessage` с мгновенным показом сообщения;
+- статусы исходящих как в MAX: часы — в пути, ✓ — отправлено, ✓✓ — доставлено, цветные ✓✓ — прочитано (вебхук `outgoingMessageStatus`, а для истории — поле `statusMessage`);
 - получение входящих и исходящих сообщений через HTTP API (`ReceiveNotification` → обработка → `DeleteNotification`);
 - список чатов аккаунта (`GetChats`) со счётчиком непрочитанных и превью последнего сообщения;
 - история переписки при открытии чата (`GetChatHistory`);
@@ -78,6 +79,7 @@ npm test         # vitest run
 - https://green-api.com/v3/docs/api/receiving/technology-http-api/
 - https://green-api.com/v3/docs/api/receiving/technology-http-api/ReceiveNotification/
 - https://green-api.com/v3/docs/api/receiving/technology-http-api/DeleteNotification/
+- https://green-api.com/v3/docs/api/receiving/notifications-format/statuses/OutgoingMessageStatus/
 - https://green-api.com/v3/docs/api/account/GetSettings/
 - https://green-api.com/v3/docs/api/service/CheckAccount/
 - https://green-api.com/v3/docs/api/service/GetContactInfo/
