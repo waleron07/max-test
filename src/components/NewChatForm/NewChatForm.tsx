@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { isValidPhone, normalizePhone } from '../../utils/phone';
+import { DEFAULT_COUNTRY, nationalLength, type Country } from '../../utils/countries';
+import { PhoneInput } from '../PhoneInput/PhoneInput';
 import { Alert } from '../ui/Alert';
 import styles from './NewChatForm.module.css';
 
@@ -9,38 +10,48 @@ type NewChatFormProps = {
 };
 
 export function NewChatForm({ onOpenChat, disabled = false }: NewChatFormProps) {
-  const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
+  const [national, setNational] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const isComplete = national.length === nationalLength(country);
+
+  function handleCountryChange(next: Country) {
+    setCountry(next);
+    setNational((prev) => prev.slice(0, nationalLength(next)));
+    setError(null);
+  }
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (disabled) {
       return;
     }
-    if (!isValidPhone(phone)) {
-      setError('Введите номер в международном формате, например 79991234567');
+    if (!isComplete) {
+      setError('Введите номер получателя полностью');
       return;
     }
     setError(null);
-    onOpenChat(normalizePhone(phone));
+    onOpenChat(`${country.dial}${national}`);
   }
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       <h2 className={styles.title}>Новый чат</h2>
-      <p className={styles.subtitle}>Номер получателя в MAX</p>
+      <p className={styles.subtitle}>С каким номером хотите начать переписку?</p>
 
       <div className={styles.row}>
-        <input
-          className={styles.input}
-          value={phone}
-          onChange={(event) => setPhone(event.target.value)}
-          placeholder="79991234567"
-          inputMode="tel"
-          autoComplete="off"
+        <PhoneInput
+          country={country}
+          national={national}
+          onCountryChange={handleCountryChange}
+          onNationalChange={(digits) => {
+            setNational(digits);
+            setError(null);
+          }}
           disabled={disabled}
         />
-        <button className={styles.submit} type="submit" disabled={disabled || !phone.trim()}>
+        <button className={styles.submit} type="submit" disabled={disabled || !isComplete}>
           Открыть
         </button>
       </div>

@@ -1,0 +1,68 @@
+.wrapper {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 4px;
+  background: var(--surface-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s ease;
+}
+
+.wrapper:focus-within {
+  border-color: var(--accent);
+}
+
+.country {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-right: 1px solid var(--border);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.country::after {
+  content: '▾';
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.dial {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Нативный select даёт бесплатную доступность и привычный выбор на мобильных. */
+.select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.select:disabled {
+  cursor: not-allowed;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px 8px 0;
+  font: inherit;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: transparent;
+  border: none;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}

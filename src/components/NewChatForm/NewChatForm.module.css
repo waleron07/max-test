@@ -21,25 +21,13 @@
 
 .row {
   display: flex;
+  align-items: stretch;
   gap: 8px;
 }
 
-.input {
+.row > *:first-child {
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
-  font: inherit;
-  font-size: 15px;
-  color: var(--text);
-  background: var(--surface-muted);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-}
-
-.input:focus {
-  outline: none;
-  background: var(--surface);
-  border-color: var(--accent);
 }
 
 .submit {
