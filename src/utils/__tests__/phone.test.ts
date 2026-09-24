@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildChatId, formatPhone, normalizePhone } from '../phone';
+import { buildChatId, canCheckAccount, formatPhone, normalizePhone } from '../phone';
 import { DEFAULT_COUNTRY, countryByCode, formatNational, nationalLength } from '../countries';
 
 describe('phone', () => {
@@ -36,5 +36,17 @@ describe('countries', () => {
 
   it('откатывается к стране по умолчанию для неизвестного кода', () => {
     expect(countryByCode('XX')).toBe(DEFAULT_COUNTRY);
+  });
+});
+
+describe('canCheckAccount', () => {
+  it('разрешает проверку для номеров России и Беларуси', () => {
+    expect(canCheckAccount('79991234567')).toBe(true);
+    expect(canCheckAccount('375291234567')).toBe(true);
+  });
+
+  it('пропускает проверку для остальных стран и неполных номеров', () => {
+    expect(canCheckAccount('998901234567')).toBe(false);
+    expect(canCheckAccount('7999123456')).toBe(false);
   });
 });

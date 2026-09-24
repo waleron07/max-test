@@ -6,32 +6,43 @@ import styles from './NewChatForm.module.css';
 
 type NewChatFormProps = {
   onOpenChat: (phone: string) => void;
-  disabled?: boolean;
+  isOpening?: boolean;
+  /** Ошибка проверки номера на стороне GREEN-API. */
+  error?: string | null;
+  /** Вызывается при правке номера, чтобы владелец сбросил свою ошибку. */
+  onEdit?: () => void;
 };
 
-export function NewChatForm({ onOpenChat, disabled = false }: NewChatFormProps) {
+export function NewChatForm({
+  onOpenChat,
+  isOpening = false,
+  error = null,
+  onEdit,
+}: NewChatFormProps) {
   const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [national, setNational] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const isComplete = national.length === nationalLength(country);
+  const shownError = localError ?? error;
 
   function handleCountryChange(next: Country) {
     setCountry(next);
     setNational((prev) => prev.slice(0, nationalLength(next)));
-    setError(null);
+    setLocalError(null);
+    onEdit?.();
   }
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (disabled) {
+    if (isOpening) {
       return;
     }
     if (!isComplete) {
-      setError('Введите номер получателя полностью');
+      setLocalError('Введите номер получателя полностью');
       return;
     }
-    setError(null);
+    setLocalError(null);
     onOpenChat(`${country.dial}${national}`);
   }
 
@@ -47,16 +58,17 @@ export function NewChatForm({ onOpenChat, disabled = false }: NewChatFormProps) 
           onCountryChange={handleCountryChange}
           onNationalChange={(digits) => {
             setNational(digits);
-            setError(null);
+            setLocalError(null);
+            onEdit?.();
           }}
-          disabled={disabled}
+          disabled={isOpening}
         />
-        <button className={styles.submit} type="submit" disabled={disabled || !isComplete}>
-          Открыть
+        <button className={styles.submit} type="submit" disabled={isOpening || !isComplete}>
+          {isOpening ? 'Проверяем…' : 'Открыть'}
         </button>
       </div>
 
-      {error && <Alert>{error}</Alert>}
+      {shownError && <Alert>{shownError}</Alert>}
     </form>
   );
 }

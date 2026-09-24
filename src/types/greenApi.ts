@@ -34,6 +34,14 @@ export type SendMessageResponse = {
 };
 
 /** https://green-api.com/v3/docs/api/receiving/technology-http-api/DeleteNotification/ */
+/**
+ * https://green-api.com/v3/docs/api/service/CheckAccount/
+ * При недоступном инстансе метод отвечает не `exist`, а парой `status`/`reason`.
+ */
+export type CheckAccountResponse =
+  | { exist: boolean; chatId: string; fromCache?: boolean }
+  | { status: false; reason?: string };
+
 /** https://green-api.com/v3/docs/api/service/GetContactInfo/ */
 export type GetContactInfoResponse = {
   chatId: string;

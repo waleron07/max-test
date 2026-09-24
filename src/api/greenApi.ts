@@ -1,5 +1,6 @@
 import { GreenApiError } from './errors';
 import type {
+  CheckAccountResponse,
   Credentials,
   DeleteNotificationResponse,
   GetContactInfoResponse,
@@ -77,6 +78,16 @@ export function createGreenApiClient({ idInstance, apiTokenInstance, apiUrl }: C
         throw new GreenApiError('GREEN-API не вернул состояние инстанса.');
       }
       return data;
+    },
+
+    /** https://green-api.com/v3/docs/api/service/CheckAccount/ */
+    async checkAccount(phone: string, signal?: AbortSignal): Promise<CheckAccountResponse | null> {
+      return request<CheckAccountResponse>({
+        method: 'POST',
+        apiMethod: 'checkAccount',
+        body: { phoneNumber: Number(phone) },
+        signal,
+      });
     },
 
     /** https://green-api.com/v3/docs/api/service/GetContactInfo/ */

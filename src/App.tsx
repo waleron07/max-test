@@ -9,7 +9,7 @@ import { useReceiveNotifications } from './hooks/useReceiveNotifications';
 import type { Chat as ChatModel, Message } from './types/chat';
 import type { Credentials, NotificationBody } from './types/greenApi';
 import { belongsToChat, toMessage } from './utils/notifications';
-import { buildChatId, formatPhone } from './utils/phone';
+import { buildChatId, canCheckAccount, formatPhone } from './utils/phone';
 import styles from './App.module.css';
 
 const STATE_MESSAGES: Record<string, string> = {
@@ -35,6 +35,8 @@ export default function App() {
   }, [chat]);
   const [isSending, setIsSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [isOpeningChat, setIsOpeningChat] = useState(false);
+  const [openChatError, setOpenChatError] = useState<string | null>(null);
 
   // Клиент пересоздаётся только при смене учётных данных — от него зависит цикл polling.
   const client = useMemo(
@@ -90,35 +92,67 @@ export default function App() {
     setChatError(null);
   }
 
-  function handleOpenChat(phone: string) {
-    setChat({ chatId: buildChatId(phone), phone, title: formatPhone(phone) });
-    setMessages([]);
-    setChatError(null);
-    void resolveChatId(phone);
+  async function handleOpenChat(phone: string) {
+    if (!client || isOpeningChat) {
+      return;
+    }
+
+    setIsOpeningChat(true);
+    setOpenChatError(null);
+
+    try {
+      const chatId = await resolveChatId(phone);
+      if (!chatId) {
+        setOpenChatError('Этот номер не зарегистрирован в MAX.');
+        return;
+      }
+      setChat({ chatId, phone, title: formatPhone(phone) });
+      setMessages([]);
+      setChatError(null);
+      void loadContactName(phone, chatId);
+    } finally {
+      setIsOpeningChat(false);
+    }
   }
 
   /**
-   * В MAX канонический chatId — числовой, а отправлять можно и `<phone>@c.us`.
-   * Уточняем его через getContactInfo, чтобы входящие уведомления совпадали по chatId точно;
-   * если метод недоступен, остаётся сопоставление по номеру отправителя.
+   * Возвращает канонический числовой chatId (по нему точно совпадают входящие уведомления)
+   * или null, если аккаунта в MAX нет. Если проверка недоступна, работаем по `<phone>@c.us`.
    */
-  async function resolveChatId(phone: string) {
+  async function resolveChatId(phone: string): Promise<string | null> {
+    const fallback = buildChatId(phone);
+    if (!client || !canCheckAccount(phone)) {
+      return fallback;
+    }
+
+    try {
+      const result = await client.checkAccount(phone);
+      if (!result || !('exist' in result)) {
+        return fallback;
+      }
+      return result.exist ? result.chatId || fallback : null;
+    } catch (error) {
+      // Сбой проверки не должен мешать открыть чат: номер мог быть верным.
+      if (import.meta.env.DEV) {
+        console.warn('Не удалось проверить номер через checkAccount', error);
+      }
+      return fallback;
+    }
+  }
+
+  async function loadContactName(phone: string, chatId: string) {
     if (!client) {
       return;
     }
     try {
-      const info = await client.getContactInfo(buildChatId(phone));
-      if (!info?.chatId || chatRef.current?.phone !== phone) {
-        return;
+      const info = await client.getContactInfo(chatId);
+      const name = info?.contactName || info?.name;
+      if (name && chatRef.current?.phone === phone) {
+        setChat((prev) => (prev?.phone === phone ? { ...prev, title: name } : prev));
       }
-      setChat((prev) =>
-        prev?.phone === phone
-          ? { ...prev, chatId: info.chatId, title: info.contactName || info.name || prev.title }
-          : prev,
-      );
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.warn('Не удалось уточнить chatId контакта', error);
+        console.warn('Не удалось получить имя контакта', error);
       }
     }
   }
@@ -214,7 +248,12 @@ export default function App() {
           />
         ) : (
           <>
-            <NewChatForm onOpenChat={handleOpenChat} />
+            <NewChatForm
+              onOpenChat={handleOpenChat}
+              isOpening={isOpeningChat}
+              error={openChatError}
+              onEdit={() => setOpenChatError(null)}
+            />
             <div className={styles.placeholder}>
               <p>Откройте чат по номеру телефона, чтобы начать переписку в MAX</p>
             </div>
