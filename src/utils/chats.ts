@@ -66,6 +66,19 @@ export function appendMessage(messages: Message[], message: Message): Message[] 
     : [...messages, message];
 }
 
+/**
+ * Свежие переписки сверху. Время берётся из последнего известного сообщения;
+ * чаты без загруженных сообщений сохраняют порядок, в котором их вернул GetChats.
+ */
+export function sortChatsByLastMessage(
+  chats: Chat[],
+  lastMessages: Record<string, Message | undefined>,
+): Chat[] {
+  return [...chats].sort((a, b) =>
+    (lastMessages[b.chatId]?.timestamp ?? 0) - (lastMessages[a.chatId]?.timestamp ?? 0),
+  );
+}
+
 export function upsertChat(chats: Chat[], chat: Chat): Chat[] {
   const index = chats.findIndex((item) => item.chatId === chat.chatId);
   if (index === -1) {

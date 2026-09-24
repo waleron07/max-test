@@ -13,6 +13,7 @@ import {
   appendMessage,
   chatFromNotification,
   historyToMessages,
+  sortChatsByLastMessage,
   toChat,
   upsertChat,
 } from './utils/chats';
@@ -383,6 +384,11 @@ export default function App() {
     return result;
   }, [messagesByChat]);
 
+  const sortedChats = useMemo(
+    () => sortChatsByLastMessage(chats, lastMessages),
+    [chats, lastMessages],
+  );
+
   if (!credentials) {
     return (
       <main className={styles.centered}>
@@ -429,7 +435,7 @@ export default function App() {
               onEdit={() => setOpenChatError(null)}
             />
             <ChatList
-              chats={chats}
+              chats={sortedChats}
               activeChatId={activeChatId}
               lastMessages={lastMessages}
               unread={unread}

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { appendMessage, chatFromNotification, historyToMessages, toChat, upsertChat } from '../chats';
+import {
+  appendMessage,
+  chatFromNotification,
+  historyToMessages,
+  sortChatsByLastMessage,
+  toChat,
+  upsertChat,
+} from '../chats';
 import type { Chat, Message } from '../../types/chat';
 
 describe('toChat', () => {
@@ -111,5 +118,34 @@ describe('upsertChat', () => {
     const updated = upsertChat([other, chat], { ...chat, title: 'Иван' });
     expect(updated[1].title).toBe('Иван');
     expect(updated).toHaveLength(2);
+  });
+});
+
+describe('sortChatsByLastMessage', () => {
+  const older: Chat = { chatId: '1', phone: '', title: 'Старый' };
+  const newer: Chat = { chatId: '2', phone: '', title: 'Новый' };
+  const silent: Chat = { chatId: '3', phone: '', title: 'Без сообщений' };
+
+  const message = (timestamp: number): Message => ({
+    id: String(timestamp),
+    text: 'т',
+    direction: 'incoming',
+    timestamp,
+  });
+
+  it('поднимает чаты со свежими сообщениями наверх', () => {
+    const sorted = sortChatsByLastMessage([older, newer], {
+      1: message(100),
+      2: message(200),
+    });
+    expect(sorted.map((chat) => chat.chatId)).toEqual(['2', '1']);
+  });
+
+  it('оставляет чаты без сообщений внизу в исходном порядке', () => {
+    const sorted = sortChatsByLastMessage([silent, older, newer], {
+      1: message(100),
+      2: message(200),
+    });
+    expect(sorted.map((chat) => chat.chatId)).toEqual(['2', '1', '3']);
   });
 });
