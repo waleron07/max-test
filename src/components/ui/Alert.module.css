@@ -1,0 +1,17 @@
+.alert {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.error {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.info {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
