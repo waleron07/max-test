@@ -18,7 +18,11 @@ export function loadCredentials(): Credentials | null {
       && 'idInstance' in parsed && typeof parsed.idInstance === 'string'
       && 'apiTokenInstance' in parsed && typeof parsed.apiTokenInstance === 'string'
     ) {
-      return { idInstance: parsed.idInstance, apiTokenInstance: parsed.apiTokenInstance };
+      return {
+        idInstance: parsed.idInstance,
+        apiTokenInstance: parsed.apiTokenInstance,
+        apiUrl: 'apiUrl' in parsed && typeof parsed.apiUrl === 'string' ? parsed.apiUrl : undefined,
+      };
     }
     return null;
   } catch {

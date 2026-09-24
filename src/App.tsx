@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createGreenApiClient } from './api/greenApi';
+import { candidateApiUrls, createGreenApiClient } from './api/greenApi';
 import { toUserMessage } from './api/errors';
 import { Chat } from './components/Chat/Chat';
 import { ChatList } from './components/ChatList/ChatList';
@@ -107,16 +107,16 @@ export default function App() {
     setIsConnecting(true);
     setConnectionError(null);
     try {
-      const { stateInstance } = await createGreenApiClient(next).getStateInstance();
+      const { credentials: resolved, stateInstance } = await connectToInstance(next);
       if (stateInstance !== 'authorized') {
         clearCredentials();
         setConnectionError(STATE_MESSAGES[stateInstance] ?? `Состояние инстанса: ${stateInstance}`);
         return;
       }
-      setCredentials(next);
-      saveCredentials(next);
-      void checkReceivingSettings(next);
-      void loadChats(next);
+      setCredentials(resolved);
+      saveCredentials(resolved);
+      void checkReceivingSettings(resolved);
+      void loadChats(resolved);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Не удалось подключиться к GREEN-API', error);
@@ -126,6 +126,27 @@ export default function App() {
     } finally {
       setIsConnecting(false);
     }
+  }
+
+  /** Подбирает хост инстанса: сначала выделенный, затем универсальный. */
+  async function connectToInstance(next: Credentials) {
+    const hosts = next.apiUrl ? [next.apiUrl] : candidateApiUrls(next.idInstance);
+    let lastError: unknown;
+
+    for (const apiUrl of hosts) {
+      const credentials = { ...next, apiUrl };
+      try {
+        const { stateInstance } = await createGreenApiClient(credentials).getStateInstance();
+        return { credentials, stateInstance };
+      } catch (error) {
+        lastError = error;
+        if (import.meta.env.DEV) {
+          console.warn(`Хост ${apiUrl} не ответил`, error);
+        }
+      }
+    }
+
+    throw lastError;
   }
 
   /**

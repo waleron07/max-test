@@ -13,8 +13,24 @@ import type {
   SendMessageResponse,
 } from '../types/greenApi';
 
-/** Универсальный хост GREEN-API; для инстанса на выделенном сервере задайте VITE_GREEN_API_URL. */
-export const DEFAULT_API_URL = import.meta.env.VITE_GREEN_API_URL ?? 'https://api.green-api.com';
+/** Универсальный хост GREEN-API: подходит инстансам, у которых нет выделенного сервера. */
+export const DEFAULT_API_URL = 'https://api.green-api.com';
+
+/**
+ * Инстансы на выделенных серверах отвечают только на своём хосте вида `https://7107.api.greenapi.com`
+ * (адрес указан в личном кабинете). Префикс — первые четыре цифры idInstance, поэтому хост можно
+ * определить автоматически и не спрашивать его у пользователя: задание требует только idInstance и токен.
+ */
+export function candidateApiUrls(idInstance: string): string[] {
+  const override = import.meta.env.VITE_GREEN_API_URL;
+  if (override) {
+    return [override];
+  }
+  const prefix = idInstance.trim().slice(0, 4);
+  return /^\d{4}$/.test(prefix)
+    ? [`https://${prefix}.api.greenapi.com`, DEFAULT_API_URL]
+    : [DEFAULT_API_URL];
+}
 
 /** receiveNotification принимает 5–60 секунд; берём длинный таймаут, чтобы это был long polling. */
 const RECEIVE_TIMEOUT_SECONDS = 20;
