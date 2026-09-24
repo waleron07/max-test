@@ -8,6 +8,7 @@ import { Alert } from './components/ui/Alert';
 import { useReceiveNotifications } from './hooks/useReceiveNotifications';
 import type { Chat as ChatModel, Message } from './types/chat';
 import type { Credentials, NotificationBody } from './types/greenApi';
+import { clearCredentials, loadCredentials, saveCredentials } from './utils/credentialsStorage';
 import { belongsToChat, toMessage } from './utils/notifications';
 import { buildChatId, canCheckAccount, formatPhone } from './utils/phone';
 import styles from './App.module.css';
@@ -37,6 +38,7 @@ export default function App() {
   const [chatError, setChatError] = useState<string | null>(null);
   const [isOpeningChat, setIsOpeningChat] = useState(false);
   const [openChatError, setOpenChatError] = useState<string | null>(null);
+  const [settingsWarning, setSettingsWarning] = useState<string | null>(null);
 
   // Клиент пересоздаётся только при смене учётных данных — от него зависит цикл polling.
   const client = useMemo(
@@ -65,27 +67,76 @@ export default function App() {
 
   const { error: receiveError } = useReceiveNotifications(client, handleNotification);
 
+  // Учётные данные из сессии вкладки: переживают перезагрузку страницы, но не закрытие вкладки.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current) {
+      return;
+    }
+    restored.current = true;
+    const stored = loadCredentials();
+    if (stored) {
+      void handleConnect(stored);
+    }
+  }, []);
+
   async function handleConnect(next: Credentials) {
     setIsConnecting(true);
     setConnectionError(null);
     try {
       const { stateInstance } = await createGreenApiClient(next).getStateInstance();
       if (stateInstance !== 'authorized') {
+        clearCredentials();
         setConnectionError(STATE_MESSAGES[stateInstance] ?? `Состояние инстанса: ${stateInstance}`);
         return;
       }
       setCredentials(next);
+      saveCredentials(next);
+      void checkReceivingSettings(next);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Не удалось подключиться к GREEN-API', error);
       }
+      clearCredentials();
       setConnectionError(toUserMessage(error));
     } finally {
       setIsConnecting(false);
     }
   }
 
+  /**
+   * Уведомления попадают в очередь HTTP API только при пустом webhookUrl.
+   * Если инстанс настроен на вебхуки, входящие не придут — предупреждаем сразу.
+   */
+  async function checkReceivingSettings(next: Credentials) {
+    try {
+      const settings = await createGreenApiClient(next).getSettings();
+      if (!settings) {
+        return;
+      }
+      if (settings.webhookUrl) {
+        setSettingsWarning(
+          'У инстанса задан webhookUrl — уведомления уходят на него, а не в очередь HTTP API. '
+          + 'Очистите поле webhookUrl в личном кабинете GREEN-API, иначе входящие сообщения не появятся.',
+        );
+        return;
+      }
+      if (settings.incomingWebhook === 'no') {
+        setSettingsWarning(
+          'В настройках инстанса отключены уведомления о входящих сообщениях. '
+          + 'Включите «Входящие сообщения» в личном кабинете GREEN-API.',
+        );
+      }
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('Не удалось прочитать настройки инстанса', error);
+      }
+    }
+  }
+
   function handleDisconnect() {
+    clearCredentials();
+    setSettingsWarning(null);
     setCredentials(null);
     setChat(null);
     setMessages([]);
@@ -229,6 +280,12 @@ export default function App() {
             Отключиться
           </button>
         </div>
+
+        {settingsWarning && (
+          <div className={styles.topError}>
+            <Alert>{settingsWarning}</Alert>
+          </div>
+        )}
 
         {receiveError && (
           <div className={styles.topError}>

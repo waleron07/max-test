@@ -36,6 +36,16 @@ export type SendMessageResponse = {
 
 /** https://green-api.com/v3/docs/api/receiving/technology-http-api/DeleteNotification/ */
 /**
+ * https://green-api.com/v3/docs/api/account/GetSettings/
+ * Приём через HTTP API работает только при пустом webhookUrl и включённых уведомлениях.
+ */
+export type GetSettingsResponse = {
+  webhookUrl?: string;
+  incomingWebhook?: 'yes' | 'no';
+  outgoingAPIMessageWebhook?: 'yes' | 'no';
+};
+
+/**
  * https://green-api.com/v3/docs/api/service/CheckAccount/
  * При недоступном инстансе метод отвечает не `exist`, а парой `status`/`reason`.
  */

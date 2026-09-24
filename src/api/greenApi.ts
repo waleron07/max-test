@@ -4,6 +4,7 @@ import type {
   Credentials,
   DeleteNotificationResponse,
   GetContactInfoResponse,
+  GetSettingsResponse,
   GetStateInstanceResponse,
   Notification,
   SendMessageRequest,
@@ -83,6 +84,11 @@ export function createGreenApiClient({
         throw new GreenApiError('GREEN-API не вернул состояние инстанса.');
       }
       return data;
+    },
+
+    /** https://green-api.com/v3/docs/api/account/GetSettings/ */
+    async getSettings(signal?: AbortSignal): Promise<GetSettingsResponse | null> {
+      return request<GetSettingsResponse>({ method: 'GET', apiMethod: 'getSettings', signal });
     },
 
     /** https://green-api.com/v3/docs/api/service/CheckAccount/ */
