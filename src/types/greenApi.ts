@@ -6,7 +6,8 @@
 export type Credentials = {
   idInstance: string;
   apiTokenInstance: string;
-  apiUrl: string;
+  /** Переопределяется только для инстансов на выделенном хосте. */
+  apiUrl?: string;
 };
 
 /** https://green-api.com/v3/docs/api/account/GetStateInstance/ */

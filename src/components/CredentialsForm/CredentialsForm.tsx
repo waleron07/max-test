@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react';
-import { DEFAULT_API_URL } from '../../api/greenApi';
 import type { Credentials } from '../../types/greenApi';
 import { Alert } from '../ui/Alert';
 import styles from './CredentialsForm.module.css';
@@ -13,9 +12,8 @@ type CredentialsFormProps = {
 export function CredentialsForm({ onConnect, isConnecting, error }: CredentialsFormProps) {
   const [idInstance, setIdInstance] = useState('');
   const [apiTokenInstance, setApiTokenInstance] = useState('');
-  const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL);
 
-  const isValid = Boolean(idInstance.trim() && apiTokenInstance.trim() && apiUrl.trim());
+  const isValid = Boolean(idInstance.trim() && apiTokenInstance.trim());
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -25,7 +23,6 @@ export function CredentialsForm({ onConnect, isConnecting, error }: CredentialsF
     onConnect({
       idInstance: idInstance.trim(),
       apiTokenInstance: apiTokenInstance.trim(),
-      apiUrl: apiUrl.trim(),
     });
   }
 
@@ -62,20 +59,6 @@ export function CredentialsForm({ onConnect, isConnecting, error }: CredentialsF
           autoComplete="off"
           disabled={isConnecting}
         />
-      </label>
-
-      <label className={styles.field}>
-        <span className={styles.label}>apiUrl</span>
-        <input
-          className={styles.input}
-          value={apiUrl}
-          onChange={(event) => setApiUrl(event.target.value)}
-          autoComplete="off"
-          disabled={isConnecting}
-        />
-        <span className={styles.hint}>
-          Адрес хоста API указан в личном кабинете рядом с инстансом
-        </span>
       </label>
 
       {error && <Alert>{error}</Alert>}

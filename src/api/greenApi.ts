@@ -10,7 +10,8 @@ import type {
   SendMessageResponse,
 } from '../types/greenApi';
 
-export const DEFAULT_API_URL = 'https://api.green-api.com';
+/** Универсальный хост GREEN-API; для инстанса на выделенном сервере задайте VITE_GREEN_API_URL. */
+export const DEFAULT_API_URL = import.meta.env.VITE_GREEN_API_URL ?? 'https://api.green-api.com';
 
 /** receiveNotification принимает 5–60 секунд; берём длинный таймаут, чтобы это был long polling. */
 const RECEIVE_TIMEOUT_SECONDS = 20;
@@ -28,7 +29,11 @@ type RequestOptions = {
 
 export type GreenApiClient = ReturnType<typeof createGreenApiClient>;
 
-export function createGreenApiClient({ idInstance, apiTokenInstance, apiUrl }: Credentials) {
+export function createGreenApiClient({
+  idInstance,
+  apiTokenInstance,
+  apiUrl = DEFAULT_API_URL,
+}: Credentials) {
   const base = `${apiUrl.replace(/\/+$/, '')}/waInstance${idInstance}`;
 
   function buildUrl({ apiMethod, pathParams = [], query }: RequestOptions): string {
