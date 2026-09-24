@@ -4,6 +4,8 @@ import { toUserMessage } from '../api/errors';
 import type { NotificationBody } from '../types/greenApi';
 
 const RETRY_BASE_DELAY_MS = 1000;
+/** Страховка от плотного цикла, если сервер закрывает long polling мгновенно. */
+const MIN_ITERATION_MS = 1000;
 const RETRY_MAX_DELAY_MS = 30_000;
 
 function isAbortError(error: unknown): boolean {
@@ -52,12 +54,17 @@ export function useReceiveNotifications(
 
     async function poll() {
       while (!signal.aborted) {
+        const startedAt = Date.now();
         try {
           const notification = await activeClient.receiveNotification(signal);
           failures = 0;
           setError(null);
 
           if (!notification) {
+            const elapsed = Date.now() - startedAt;
+            if (elapsed < MIN_ITERATION_MS) {
+              await delay(MIN_ITERATION_MS - elapsed, signal);
+            }
             continue;
           }
 

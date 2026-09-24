@@ -168,13 +168,21 @@ export function createGreenApiClient({
      * Запрос висит до receiveTimeout секунд и возвращает null, если очередь пуста.
      */
     async receiveNotification(signal?: AbortSignal): Promise<Notification | null> {
-      const data = await request<Notification>({
-        method: 'GET',
-        apiMethod: 'receiveNotification',
-        query: { receiveTimeout: RECEIVE_TIMEOUT_SECONDS },
-        signal,
-      });
-      return data?.body ? data : null;
+      try {
+        const data = await request<Notification>({
+          method: 'GET',
+          apiMethod: 'receiveNotification',
+          query: { receiveTimeout: RECEIVE_TIMEOUT_SECONDS },
+          signal,
+        });
+        return data?.body ? data : null;
+      } catch (error) {
+        // Истёкшее ожидание приходит как 408 с пустым телом: очередь пуста, это не ошибка.
+        if (error instanceof GreenApiError && error.status === 408) {
+          return null;
+        }
+        throw error;
+      }
     },
 
     /** https://green-api.com/v3/docs/api/receiving/technology-http-api/DeleteNotification/ */
