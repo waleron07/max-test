@@ -232,6 +232,9 @@ export default function App() {
     try {
       const history = await client.getChatHistory(chatId);
       const messages = historyToMessages(history);
+      if (import.meta.env.DEV) {
+        console.debug(`История ${chatId}: получено ${history.length}, текстовых ${messages.length}`);
+      }
       setLoadedHistories((prev) => ({ ...prev, [chatId]: true }));
       setMessagesByChat((prev) => ({
         ...prev,
