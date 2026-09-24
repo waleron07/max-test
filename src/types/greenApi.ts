@@ -68,6 +68,7 @@ export type HistoryMessage = {
 export type GetSettingsResponse = {
   webhookUrl?: string;
   incomingWebhook?: 'yes' | 'no';
+  outgoingWebhook?: 'yes' | 'no';
   outgoingAPIMessageWebhook?: 'yes' | 'no';
 };
 
