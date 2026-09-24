@@ -81,6 +81,10 @@ npm test         # vitest run
 - https://green-api.com/v3/docs/api/receiving/technology-http-api/DeleteNotification/
 - https://green-api.com/v3/docs/api/receiving/notifications-format/statuses/OutgoingMessageStatus/
 - https://green-api.com/v3/docs/api/account/GetSettings/
+- https://green-api.com/v3/docs/api/service/GetChats/
+- https://green-api.com/v3/docs/api/journals/GetChatHistory/
+- https://green-api.com/v3/docs/api/journals/LastIncomingMessages/
+- https://green-api.com/v3/docs/api/journals/LastOutgoingMessages/
 - https://green-api.com/v3/docs/api/service/CheckAccount/
 - https://green-api.com/v3/docs/api/service/GetContactInfo/
 - https://green-api.com/v3/docs/api/chat-id/
