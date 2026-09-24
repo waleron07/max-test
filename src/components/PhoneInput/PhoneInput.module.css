@@ -14,11 +14,12 @@
 }
 
 .country {
+  flex: none;
   position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-right: 1px solid var(--border);
   font-size: 15px;
   white-space: nowrap;
@@ -49,8 +50,9 @@
 
 .input {
   flex: 1;
+  width: 100%;
   min-width: 0;
-  padding: 8px 10px 8px 0;
+  padding: 8px 4px 8px 8px;
   font: inherit;
   font-size: 15px;
   font-variant-numeric: tabular-nums;

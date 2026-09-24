@@ -76,7 +76,7 @@
 
 .sidebar {
   flex: none;
-  width: 300px;
+  width: 320px;
   display: flex;
   flex-direction: column;
   min-height: 0;
