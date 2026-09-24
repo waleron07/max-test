@@ -10,6 +10,7 @@ const DIRECTION_BY_WEBHOOK: Record<string, MessageDirection> = {
 
 /** https://green-api.com/v3/docs/api/receiving/notifications-format/statuses/OutgoingMessageStatus/ */
 export const MESSAGE_STATUSES: Record<string, MessageStatus> = {
+  pending: 'sending',
   sent: 'sent',
   delivered: 'delivered',
   read: 'read',

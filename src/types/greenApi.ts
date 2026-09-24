@@ -51,6 +51,8 @@ export type ChatSummary = {
 export type HistoryMessage = {
   statusMessage?: string;
   isDeleted?: boolean;
+  /** Поле есть в ответах API, но не описано в документации, поэтому только как запасной признак. */
+  isRead?: boolean;
   extendedTextMessage?: ExtendedTextMessageData;
   type?: 'incoming' | 'outgoing';
   idMessage?: string;
