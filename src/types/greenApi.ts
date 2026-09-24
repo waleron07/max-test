@@ -50,6 +50,7 @@ export type ChatSummary = {
 /** https://green-api.com/v3/docs/api/journals/GetChatHistory/ */
 export type HistoryMessage = {
   statusMessage?: string;
+  isDeleted?: boolean;
   extendedTextMessage?: ExtendedTextMessageData;
   type?: 'incoming' | 'outgoing';
   idMessage?: string;

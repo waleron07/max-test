@@ -86,6 +86,12 @@ describe('historyToMessages', () => {
     expect(message.text).toBe('https://green-api.com');
   });
 
+  it('не показывает удалённые сообщения', () => {
+    expect(historyToMessages([
+      { type: 'incoming', idMessage: '1', timestamp: 1, typeMessage: 'textMessage', textMessage: 'т', isDeleted: true },
+    ])).toEqual([]);
+  });
+
   it('переносит статус доставки исходящих сообщений', () => {
     const [message] = historyToMessages([
       { type: 'outgoing', idMessage: '1', timestamp: 1, typeMessage: 'textMessage', textMessage: 'а', statusMessage: 'read' },

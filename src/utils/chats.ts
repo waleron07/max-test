@@ -41,7 +41,8 @@ export function chatFromNotification(body: NotificationBody): Chat | null {
 export function historyToMessages(history: HistoryMessage[]): Message[] {
   return history
     .filter((item): item is HistoryMessage & { idMessage: string } =>
-      (item.typeMessage === 'textMessage' || item.typeMessage === 'extendedTextMessage')
+      !item.isDeleted
+      && (item.typeMessage === 'textMessage' || item.typeMessage === 'extendedTextMessage')
       && Boolean(item.idMessage)
       && Boolean(item.textMessage ?? item.extendedTextMessage?.text))
     .map((item) => ({
