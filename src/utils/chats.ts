@@ -59,6 +59,30 @@ export function historyToMessages(history: HistoryMessage[]): Message[] {
     .sort((a, b) => a.timestamp - b.timestamp);
 }
 
+/** Объединяет списки сообщений: дубли по idMessage схлопываются, порядок — по времени. */
+export function mergeMessages(base: Message[], incoming: Message[]): Message[] {
+  return incoming
+    .reduce(appendMessage, base)
+    .sort((a, b) => a.timestamp - b.timestamp);
+}
+
+/** Раскладывает сообщения журналов по чатам. */
+export function groupMessagesByChat(items: HistoryMessage[]): Record<string, Message[]> {
+  const result: Record<string, Message[]> = {};
+
+  for (const item of items) {
+    if (!item.chatId) {
+      continue;
+    }
+    const [message] = historyToMessages([item]);
+    if (message) {
+      result[item.chatId] = mergeMessages(result[item.chatId] ?? [], [message]);
+    }
+  }
+
+  return result;
+}
+
 /** Добавляет сообщение, не создавая дублей по idMessage. */
 export function appendMessage(messages: Message[], message: Message): Message[] {
   return messages.some((item) => item.id === message.id)

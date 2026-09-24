@@ -12,7 +12,9 @@ import type { Credentials, NotificationBody } from './types/greenApi';
 import {
   appendMessage,
   chatFromNotification,
+  groupMessagesByChat,
   historyToMessages,
+  mergeMessages,
   sortChatsByLastMessage,
   toChat,
   upsertChat,
@@ -21,6 +23,9 @@ import { clearCredentials, loadCredentials, saveCredentials } from './utils/cred
 import { belongsToChat, toMessage, toStatusUpdate } from './utils/notifications';
 import { buildChatId, canCheckAccount, formatPhone } from './utils/phone';
 import styles from './App.module.css';
+
+/** Окно журналов сообщений: 30 дней хватает, чтобы разложить список чатов по свежести. */
+const RECENT_MESSAGES_MINUTES = 43_200;
 
 const STATE_MESSAGES: Record<string, string> = {
   notAuthorized: 'Инстанс не авторизован в MAX. Авторизуйте его в личном кабинете GREEN-API.',
@@ -132,6 +137,7 @@ export default function App() {
       saveCredentials(resolved);
       void checkReceivingSettings(resolved);
       void loadChats(resolved);
+      void loadRecentMessages(resolved);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Не удалось подключиться к GREEN-API', error);
@@ -210,6 +216,31 @@ export default function App() {
     }
   }
 
+  /**
+   * Список чатов не содержит времени последней переписки, поэтому после перезагрузки
+   * сортировать его нечем — время берём из журналов входящих и исходящих сообщений.
+   */
+  async function loadRecentMessages(next: Credentials) {
+    try {
+      const messages = await createGreenApiClient(next).lastMessages(RECENT_MESSAGES_MINUTES);
+      const grouped = groupMessagesByChat(messages);
+      if (import.meta.env.DEV) {
+        console.log(`Журналы: ${messages.length} сообщений в ${Object.keys(grouped).length} чатах`);
+      }
+      setMessagesByChat((prev) => {
+        const merged = { ...prev };
+        for (const [chatId, chatMessages] of Object.entries(grouped)) {
+          merged[chatId] = mergeMessages(merged[chatId] ?? [], chatMessages);
+        }
+        return merged;
+      });
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('Не удалось загрузить журналы сообщений', error);
+      }
+    }
+  }
+
   function handleDisconnect() {
     clearCredentials();
     setCredentials(null);
@@ -244,8 +275,8 @@ export default function App() {
       setLoadedHistories((prev) => ({ ...prev, [chatId]: true }));
       setMessagesByChat((prev) => ({
         ...prev,
-        // Уведомления могли прийти раньше ответа — их сохраняем поверх истории.
-        [chatId]: (prev[chatId] ?? []).reduce(appendMessage, messages),
+        // Уведомления и журналы могли прийти раньше ответа — их сохраняем поверх истории.
+        [chatId]: mergeMessages(messages, prev[chatId] ?? []),
       }));
     } catch (error) {
       if (import.meta.env.DEV) {

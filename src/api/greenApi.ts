@@ -121,6 +121,29 @@ export function createGreenApiClient({
       return Array.isArray(data) ? data : [];
     },
 
+    /**
+     * https://green-api.com/v3/docs/api/journals/LastIncomingMessages/
+     * https://green-api.com/v3/docs/api/journals/LastOutgoingMessages/
+     * Дают последние сообщения сразу по всем чатам — из них строится сортировка списка и превью.
+     */
+    async lastMessages(minutes: number, signal?: AbortSignal): Promise<HistoryMessage[]> {
+      const [incoming, outgoing] = await Promise.all([
+        request<HistoryMessage[]>({
+          method: 'GET',
+          apiMethod: 'lastIncomingMessages',
+          query: { minutes },
+          signal,
+        }),
+        request<HistoryMessage[]>({
+          method: 'GET',
+          apiMethod: 'lastOutgoingMessages',
+          query: { minutes },
+          signal,
+        }),
+      ]);
+      return [...(incoming ?? []), ...(outgoing ?? [])];
+    },
+
     /** https://green-api.com/v3/docs/api/account/GetSettings/ */
     async getSettings(signal?: AbortSignal): Promise<GetSettingsResponse | null> {
       return request<GetSettingsResponse>({ method: 'GET', apiMethod: 'getSettings', signal });

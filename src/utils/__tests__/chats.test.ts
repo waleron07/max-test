@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   appendMessage,
   chatFromNotification,
+  groupMessagesByChat,
   historyToMessages,
+  mergeMessages,
   sortChatsByLastMessage,
   toChat,
   upsertChat,
@@ -147,5 +149,42 @@ describe('sortChatsByLastMessage', () => {
       2: message(200),
     });
     expect(sorted.map((chat) => chat.chatId)).toEqual(['2', '1', '3']);
+  });
+});
+
+describe('groupMessagesByChat', () => {
+  it('раскладывает журналы по чатам и сортирует по времени', () => {
+    const grouped = groupMessagesByChat([
+      { type: 'incoming', idMessage: '2', timestamp: 200, typeMessage: 'textMessage', textMessage: 'позже', chatId: 'a' },
+      { type: 'outgoing', idMessage: '1', timestamp: 100, typeMessage: 'textMessage', textMessage: 'раньше', chatId: 'a' },
+      { type: 'incoming', idMessage: '3', timestamp: 300, typeMessage: 'textMessage', textMessage: 'другой чат', chatId: 'b' },
+      { type: 'incoming', idMessage: '4', timestamp: 400, typeMessage: 'imageMessage', chatId: 'c' },
+    ]);
+
+    expect(Object.keys(grouped).sort()).toEqual(['a', 'b']);
+    expect(grouped.a.map((item) => item.id)).toEqual(['1', '2']);
+  });
+
+  it('пропускает сообщения без chatId', () => {
+    expect(groupMessagesByChat([
+      { type: 'incoming', idMessage: '1', timestamp: 1, typeMessage: 'textMessage', textMessage: 'т' },
+    ])).toEqual({});
+  });
+});
+
+describe('mergeMessages', () => {
+  const message = (id: string, timestamp: number): Message => ({
+    id,
+    text: id,
+    direction: 'incoming',
+    timestamp,
+  });
+
+  it('объединяет без дублей и сортирует по времени', () => {
+    const merged = mergeMessages(
+      [message('1', 100), message('3', 300)],
+      [message('2', 200), message('3', 300)],
+    );
+    expect(merged.map((item) => item.id)).toEqual(['1', '2', '3']);
   });
 });
