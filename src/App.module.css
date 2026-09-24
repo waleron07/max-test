@@ -18,7 +18,7 @@
 .window {
   display: flex;
   flex-direction: column;
-  width: min(760px, 100%);
+  width: min(1040px, 100%);
   min-height: 100dvh;
   background: var(--bg);
   border-inline: 1px solid var(--border);
@@ -68,6 +68,22 @@
   padding: 8px 16px 0;
 }
 
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.sidebar {
+  flex: none;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
 .placeholder {
   flex: 1;
   display: grid;
@@ -77,8 +93,19 @@
   text-align: center;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 760px) {
   .window {
     border-inline: none;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+  }
+
+  /* На узком экране показываем либо список чатов, либо открытый чат. */
+  .body[data-chat-open='true'] .sidebar,
+  .body[data-chat-open='false'] .placeholder {
+    display: none;
   }
 }

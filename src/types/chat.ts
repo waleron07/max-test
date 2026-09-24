@@ -13,9 +13,9 @@ export type Message = {
 };
 
 export type Chat = {
-  /** chatId, который отправляется в API: `<phone>@c.us`. */
+  /** Идентификатор чата в GREEN-API: числовой id MAX или `<phone>@c.us`. */
   chatId: string;
-  /** Только цифры, используется для сопоставления входящих уведомлений. */
+  /** Только цифры; пустая строка, если номер скрыт. */
   phone: string;
   title: string;
 };

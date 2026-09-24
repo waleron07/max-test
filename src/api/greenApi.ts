@@ -1,11 +1,13 @@
 import { GreenApiError } from './errors';
 import type {
+  ChatSummary,
   CheckAccountResponse,
   Credentials,
   DeleteNotificationResponse,
   GetContactInfoResponse,
   GetSettingsResponse,
   GetStateInstanceResponse,
+  HistoryMessage,
   Notification,
   SendMessageRequest,
   SendMessageResponse,
@@ -84,6 +86,23 @@ export function createGreenApiClient({
         throw new GreenApiError('GREEN-API не вернул состояние инстанса.');
       }
       return data;
+    },
+
+    /** https://green-api.com/v3/docs/api/service/GetChats/ */
+    async getChats(signal?: AbortSignal): Promise<ChatSummary[]> {
+      const data = await request<ChatSummary[]>({ method: 'GET', apiMethod: 'getChats', signal });
+      return Array.isArray(data) ? data : [];
+    },
+
+    /** https://green-api.com/v3/docs/api/journals/GetChatHistory/ */
+    async getChatHistory(chatId: string, count = 50, signal?: AbortSignal): Promise<HistoryMessage[]> {
+      const data = await request<HistoryMessage[]>({
+        method: 'POST',
+        apiMethod: 'getChatHistory',
+        body: { chatId, count },
+        signal,
+      });
+      return Array.isArray(data) ? data : [];
     },
 
     /** https://green-api.com/v3/docs/api/account/GetSettings/ */

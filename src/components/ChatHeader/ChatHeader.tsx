@@ -5,27 +5,27 @@ import styles from './ChatHeader.module.css';
 type ChatHeaderProps = {
   chat: Chat;
   isListening: boolean;
-  onClose: () => void;
+  onBack: () => void;
 };
 
-export function ChatHeader({ chat, isListening, onClose }: ChatHeaderProps) {
+export function ChatHeader({ chat, isListening, onBack }: ChatHeaderProps) {
   const phone = formatPhone(chat.phone);
 
   return (
     <header className={styles.header}>
+      <button className={styles.back} type="button" onClick={onBack} aria-label="К списку чатов">
+        ‹
+      </button>
       <div className={styles.avatar} aria-hidden="true">
         {chat.title.replace('+', '').slice(0, 2)}
       </div>
       <div className={styles.info}>
         <span className={styles.name}>{chat.title}</span>
         <span className={styles.status}>
-          {chat.title !== phone && `${phone} · `}
+          {phone && chat.title !== phone && `${phone} · `}
           {isListening ? 'приём сообщений включён' : 'приём сообщений остановлен'}
         </span>
       </div>
-      <button className={styles.close} type="button" onClick={onClose}>
-        Закрыть
-      </button>
     </header>
   );
 }

@@ -35,6 +35,26 @@ export type SendMessageResponse = {
 };
 
 /** https://green-api.com/v3/docs/api/receiving/technology-http-api/DeleteNotification/ */
+/** https://green-api.com/v3/docs/api/service/GetChats/ */
+export type ChatSummary = {
+  chatId: string;
+  name?: string;
+  type?: string;
+  phoneNumber?: number | string;
+};
+
+/** https://green-api.com/v3/docs/api/journals/GetChatHistory/ */
+export type HistoryMessage = {
+  type?: 'incoming' | 'outgoing';
+  idMessage?: string;
+  timestamp?: number;
+  typeMessage?: string;
+  chatId?: string;
+  textMessage?: string;
+  senderName?: string;
+  senderContactName?: string;
+};
+
 /**
  * https://green-api.com/v3/docs/api/account/GetSettings/
  * Приём через HTTP API работает только при пустом webhookUrl и включённых уведомлениях.

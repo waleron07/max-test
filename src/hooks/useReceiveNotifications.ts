@@ -61,6 +61,14 @@ export function useReceiveNotifications(
             continue;
           }
 
+          if (import.meta.env.DEV) {
+            console.debug(
+              'Уведомление GREEN-API',
+              notification.body.typeWebhook,
+              notification.body.senderData?.chatId,
+            );
+          }
+
           try {
             handlerRef.current(notification.body);
           } catch (handlerError) {

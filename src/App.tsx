@@ -2,12 +2,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createGreenApiClient } from './api/greenApi';
 import { toUserMessage } from './api/errors';
 import { Chat } from './components/Chat/Chat';
+import { ChatList } from './components/ChatList/ChatList';
 import { CredentialsForm } from './components/CredentialsForm/CredentialsForm';
 import { NewChatForm } from './components/NewChatForm/NewChatForm';
 import { Alert } from './components/ui/Alert';
 import { useReceiveNotifications } from './hooks/useReceiveNotifications';
 import type { Chat as ChatModel, Message } from './types/chat';
 import type { Credentials, NotificationBody } from './types/greenApi';
+import {
+  appendMessage,
+  chatFromNotification,
+  historyToMessages,
+  toChat,
+  upsertChat,
+} from './utils/chats';
 import { clearCredentials, loadCredentials, saveCredentials } from './utils/credentialsStorage';
 import { belongsToChat, toMessage } from './utils/notifications';
 import { buildChatId, canCheckAccount, formatPhone } from './utils/phone';
@@ -25,49 +33,64 @@ export default function App() {
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-
-  const [chat, setChat] = useState<ChatModel | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-
-  // Ответ sendMessage может прийти уже после закрытия или смены чата — тогда его нельзя применять.
-  const chatRef = useRef(chat);
-  useEffect(() => {
-    chatRef.current = chat;
-  }, [chat]);
-  const [isSending, setIsSending] = useState(false);
-  const [chatError, setChatError] = useState<string | null>(null);
-  const [isOpeningChat, setIsOpeningChat] = useState(false);
-  const [openChatError, setOpenChatError] = useState<string | null>(null);
   const [settingsWarning, setSettingsWarning] = useState<string | null>(null);
 
-  // Клиент пересоздаётся только при смене учётных данных — от него зависит цикл polling.
+  const [chats, setChats] = useState<ChatModel[]>([]);
+  const [isLoadingChats, setIsLoadingChats] = useState(false);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [messagesByChat, setMessagesByChat] = useState<Record<string, Message[]>>({});
+  const [loadedHistories, setLoadedHistories] = useState<Record<string, boolean>>({});
+  const [unread, setUnread] = useState<Record<string, number>>({});
+
+  const [loadingHistoryFor, setLoadingHistoryFor] = useState<string | null>(null);
+  const [isOpeningChat, setIsOpeningChat] = useState(false);
+  const [openChatError, setOpenChatError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+
+  // Клиент пересоздаётся только при смене учётных данных — от него зависит цикл опроса.
   const client = useMemo(
     () => (credentials ? createGreenApiClient(credentials) : null),
     [credentials],
   );
 
+  const activeChat = chats.find((chat) => chat.chatId === activeChatId) ?? null;
+  const activeChatIdRef = useRef(activeChatId);
+  useEffect(() => {
+    activeChatIdRef.current = activeChatId;
+  }, [activeChatId]);
+
   const handleNotification = useCallback(
     (body: NotificationBody) => {
-      if (!chat || !belongsToChat(body, chat)) {
-        return;
-      }
       const message = toMessage(body);
       if (!message) {
         return;
       }
-      // Исходящее сообщение уже добавлено оптимистично — сверяем по idMessage.
-      setMessages((prev) =>
-        prev.some((item) => item.id === message.id)
-          ? prev.map((item) => (item.id === message.id ? { ...item, status: 'sent' } : item))
-          : [...prev, message],
-      );
+
+      // Сообщение не теряется, даже если чата ещё нет в списке: он создаётся из уведомления.
+      const known = chats.find((chat) => belongsToChat(body, chat));
+      const chat = known ?? chatFromNotification(body);
+      if (!chat) {
+        return;
+      }
+
+      if (!known) {
+        setChats((prev) => upsertChat(prev, chat));
+      }
+      setMessagesByChat((prev) => ({
+        ...prev,
+        [chat.chatId]: appendMessage(prev[chat.chatId] ?? [], message),
+      }));
+      if (message.direction === 'incoming' && chat.chatId !== activeChatIdRef.current) {
+        setUnread((prev) => ({ ...prev, [chat.chatId]: (prev[chat.chatId] ?? 0) + 1 }));
+      }
     },
-    [chat],
+    [chats],
   );
 
   const { error: receiveError } = useReceiveNotifications(client, handleNotification);
 
-  // Учётные данные из сессии вкладки: переживают перезагрузку страницы, но не закрытие вкладки.
+  // Учётные данные из сессии вкладки: переживают перезагрузку страницы, но не её закрытие.
   const restored = useRef(false);
   useEffect(() => {
     if (restored.current) {
@@ -93,6 +116,7 @@ export default function App() {
       setCredentials(next);
       saveCredentials(next);
       void checkReceivingSettings(next);
+      void loadChats(next);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Не удалось подключиться к GREEN-API', error);
@@ -111,17 +135,12 @@ export default function App() {
   async function checkReceivingSettings(next: Credentials) {
     try {
       const settings = await createGreenApiClient(next).getSettings();
-      if (!settings) {
-        return;
-      }
-      if (settings.webhookUrl) {
+      if (settings?.webhookUrl) {
         setSettingsWarning(
           'У инстанса задан webhookUrl — уведомления уходят на него, а не в очередь HTTP API. '
           + 'Очистите поле webhookUrl в личном кабинете GREEN-API, иначе входящие сообщения не появятся.',
         );
-        return;
-      }
-      if (settings.incomingWebhook === 'no') {
+      } else if (settings?.incomingWebhook === 'no') {
         setSettingsWarning(
           'В настройках инстанса отключены уведомления о входящих сообщениях. '
           + 'Включите «Входящие сообщения» в личном кабинете GREEN-API.',
@@ -134,13 +153,64 @@ export default function App() {
     }
   }
 
+  async function loadChats(next: Credentials) {
+    setIsLoadingChats(true);
+    try {
+      const summaries = await createGreenApiClient(next).getChats();
+      const loaded = summaries.map(toChat).filter((chat): chat is ChatModel => chat !== null);
+      setChats((prev) => loaded.reduce(upsertChat, prev));
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('Не удалось загрузить список чатов', error);
+      }
+    } finally {
+      setIsLoadingChats(false);
+    }
+  }
+
   function handleDisconnect() {
     clearCredentials();
-    setSettingsWarning(null);
     setCredentials(null);
-    setChat(null);
-    setMessages([]);
+    setSettingsWarning(null);
+    setChats([]);
+    setActiveChatId(null);
+    setMessagesByChat({});
+    setLoadedHistories({});
+    setUnread({});
     setChatError(null);
+    setOpenChatError(null);
+  }
+
+  function handleSelectChat(chat: ChatModel) {
+    setActiveChatId(chat.chatId);
+    setChatError(null);
+    setUnread((prev) => ({ ...prev, [chat.chatId]: 0 }));
+    void loadHistory(chat.chatId);
+  }
+
+  /** История подгружается один раз на чат: дальше список пополняют уведомления. */
+  async function loadHistory(chatId: string) {
+    if (!client || loadedHistories[chatId]) {
+      return;
+    }
+    setLoadingHistoryFor(chatId);
+    try {
+      const history = await client.getChatHistory(chatId);
+      const messages = historyToMessages(history);
+      setLoadedHistories((prev) => ({ ...prev, [chatId]: true }));
+      setMessagesByChat((prev) => ({
+        ...prev,
+        // Уведомления могли прийти раньше ответа — их сохраняем поверх истории.
+        [chatId]: (prev[chatId] ?? []).reduce(appendMessage, messages),
+      }));
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('Не удалось загрузить историю сообщений', error);
+      }
+      setChatError('Не удалось загрузить историю сообщений.');
+    } finally {
+      setLoadingHistoryFor((prev) => (prev === chatId ? null : prev));
+    }
   }
 
   async function handleOpenChat(phone: string) {
@@ -150,17 +220,19 @@ export default function App() {
 
     setIsOpeningChat(true);
     setOpenChatError(null);
-
     try {
       const chatId = await resolveChatId(phone);
       if (!chatId) {
         setOpenChatError('Этот номер не зарегистрирован в MAX.');
         return;
       }
-      setChat({ chatId, phone, title: formatPhone(phone) });
-      setMessages([]);
-      setChatError(null);
-      void loadContactName(phone, chatId);
+      const existing = chats.find((chat) => chat.chatId === chatId);
+      const chat = existing ?? { chatId, phone, title: formatPhone(phone) };
+      if (!existing) {
+        setChats((prev) => upsertChat(prev, chat));
+        void loadContactName(chat);
+      }
+      handleSelectChat(chat);
     } finally {
       setIsOpeningChat(false);
     }
@@ -191,15 +263,15 @@ export default function App() {
     }
   }
 
-  async function loadContactName(phone: string, chatId: string) {
+  async function loadContactName(chat: ChatModel) {
     if (!client) {
       return;
     }
     try {
-      const info = await client.getContactInfo(chatId);
+      const info = await client.getContactInfo(chat.chatId);
       const name = info?.contactName || info?.name;
-      if (name && chatRef.current?.phone === phone) {
-        setChat((prev) => (prev?.phone === phone ? { ...prev, title: name } : prev));
+      if (name) {
+        setChats((prev) => upsertChat(prev, { ...chat, title: name }));
       }
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -209,52 +281,62 @@ export default function App() {
   }
 
   async function handleSend(text: string) {
-    if (!client || !chat || isSending) {
+    if (!client || !activeChat || isSending) {
       return;
     }
 
+    const chatId = activeChat.chatId;
+    const pendingId = `pending-${crypto.randomUUID()}`;
     setIsSending(true);
     setChatError(null);
-
-    const targetChatId = chat.chatId;
-    const pendingId = `pending-${crypto.randomUUID()}`;
-    const pending: Message = {
-      id: pendingId,
-      text,
-      direction: 'outgoing',
-      timestamp: Math.floor(Date.now() / 1000),
-      status: 'sending',
-    };
-    setMessages((prev) => [...prev, pending]);
+    setMessagesByChat((prev) => ({
+      ...prev,
+      [chatId]: appendMessage(prev[chatId] ?? [], {
+        id: pendingId,
+        text,
+        direction: 'outgoing',
+        timestamp: Math.floor(Date.now() / 1000),
+        status: 'sending',
+      }),
+    }));
 
     try {
-      const { idMessage } = await client.sendMessage({ chatId: targetChatId, message: text });
-      if (chatRef.current?.chatId !== targetChatId) {
-        return;
-      }
-      setMessages((prev) =>
-        // Уведомление об этом же сообщении могло прийти раньше ответа — тогда убираем черновик.
-        prev.some((item) => item.id === idMessage)
-          ? prev.filter((item) => item.id !== pendingId)
-          : prev.map((item) =>
-              item.id === pendingId ? { ...item, id: idMessage, status: 'sent' } : item,
-            ),
-      );
+      const { idMessage } = await client.sendMessage({ chatId, message: text });
+      setMessagesByChat((prev) => {
+        const messages = prev[chatId] ?? [];
+        return {
+          ...prev,
+          // Уведомление об этом же сообщении могло прийти раньше ответа — тогда убираем черновик.
+          [chatId]: messages.some((item) => item.id === idMessage)
+            ? messages.filter((item) => item.id !== pendingId)
+            : messages.map((item) =>
+                item.id === pendingId ? { ...item, id: idMessage, status: 'sent' } : item,
+              ),
+        };
+      });
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Не удалось отправить сообщение', error);
       }
-      if (chatRef.current?.chatId !== targetChatId) {
-        return;
-      }
       setChatError(toUserMessage(error));
-      setMessages((prev) =>
-        prev.map((item) => (item.id === pendingId ? { ...item, status: 'failed' } : item)),
-      );
+      setMessagesByChat((prev) => ({
+        ...prev,
+        [chatId]: (prev[chatId] ?? []).map((item) =>
+          item.id === pendingId ? { ...item, status: 'failed' } : item,
+        ),
+      }));
     } finally {
       setIsSending(false);
     }
   }
+
+  const lastMessages = useMemo(() => {
+    const result: Record<string, Message | undefined> = {};
+    for (const [chatId, messages] of Object.entries(messagesByChat)) {
+      result[chatId] = messages[messages.length - 1];
+    }
+    return result;
+  }, [messagesByChat]);
 
   if (!credentials) {
     return (
@@ -293,29 +375,41 @@ export default function App() {
           </div>
         )}
 
-        {chat ? (
-          <Chat
-            chat={chat}
-            messages={messages}
-            isSending={isSending}
-            isListening={!receiveError}
-            error={chatError}
-            onSend={handleSend}
-            onClose={() => setChat(null)}
-          />
-        ) : (
-          <>
+        <div className={styles.body} data-chat-open={activeChat ? 'true' : 'false'}>
+          <aside className={styles.sidebar}>
             <NewChatForm
               onOpenChat={handleOpenChat}
               isOpening={isOpeningChat}
               error={openChatError}
               onEdit={() => setOpenChatError(null)}
             />
+            <ChatList
+              chats={chats}
+              activeChatId={activeChatId}
+              lastMessages={lastMessages}
+              unread={unread}
+              isLoading={isLoadingChats}
+              onSelect={handleSelectChat}
+            />
+          </aside>
+
+          {activeChat ? (
+            <Chat
+              chat={activeChat}
+              messages={messagesByChat[activeChat.chatId] ?? []}
+              isLoadingHistory={loadingHistoryFor === activeChat.chatId}
+              isSending={isSending}
+              isListening={!receiveError}
+              error={chatError}
+              onSend={handleSend}
+              onBack={() => setActiveChatId(null)}
+            />
+          ) : (
             <div className={styles.placeholder}>
-              <p>Откройте чат по номеру телефона, чтобы начать переписку в MAX</p>
+              <p>Выберите чат или начните новый по номеру телефона</p>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </main>
   );
