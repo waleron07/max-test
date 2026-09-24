@@ -1,4 +1,4 @@
-import type { Chat, Message, MessageDirection } from '../types/chat';
+import type { Chat, Message, MessageDirection, MessageStatus } from '../types/chat';
 import type { NotificationBody } from '../types/greenApi';
 import { normalizePhone } from './phone';
 
@@ -7,6 +7,30 @@ const DIRECTION_BY_WEBHOOK: Record<string, MessageDirection> = {
   outgoingMessageReceived: 'outgoing',
   outgoingAPIMessageReceived: 'outgoing',
 };
+
+/** https://green-api.com/v3/docs/api/receiving/notifications-format/statuses/OutgoingMessageStatus/ */
+export const MESSAGE_STATUSES: Record<string, MessageStatus> = {
+  sent: 'sent',
+  delivered: 'delivered',
+  read: 'read',
+  failed: 'failed',
+  noAccount: 'failed',
+  notInGroup: 'failed',
+};
+
+export type StatusUpdate = {
+  idMessage: string;
+  status: MessageStatus;
+};
+
+/** Статус ранее отправленного сообщения: доставлено, прочитано или не доставлено. */
+export function toStatusUpdate(body: NotificationBody): StatusUpdate | null {
+  if (body.typeWebhook !== 'outgoingMessageStatus' || !body.idMessage || !body.status) {
+    return null;
+  }
+  const status = MESSAGE_STATUSES[body.status];
+  return status ? { idMessage: body.idMessage, status } : null;
+}
 
 /** Превращает уведомление в сообщение приложения; всё нетекстовое отбрасывается. */
 export function toMessage(body: NotificationBody): Message | null {

@@ -64,7 +64,19 @@
 }
 
 .meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   align-self: flex-end;
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.ticks {
+  font-size: 11px;
+  letter-spacing: -2px;
+}
+
+.read {
+  color: var(--accent);
 }

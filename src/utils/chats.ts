@@ -1,5 +1,6 @@
-import type { Chat, Message } from '../types/chat';
+import type { Chat, Message, MessageStatus } from '../types/chat';
 import type { ChatSummary, HistoryMessage, NotificationBody } from '../types/greenApi';
+import { MESSAGE_STATUSES } from './notifications';
 import { formatPhone, normalizePhone } from './phone';
 
 /** Личные чаты; группы и каналы заданием не предусмотрены. */
@@ -48,6 +49,9 @@ export function historyToMessages(history: HistoryMessage[]): Message[] {
       senderName: item.type === 'incoming'
         ? item.senderContactName || item.senderName
         : undefined,
+      status: item.type === 'incoming'
+        ? undefined
+        : (MESSAGE_STATUSES[item.statusMessage ?? ''] ?? 'sent') as MessageStatus,
     }))
     .sort((a, b) => a.timestamp - b.timestamp);
 }

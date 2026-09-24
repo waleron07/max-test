@@ -54,6 +54,13 @@ describe('historyToMessages', () => {
     });
     expect(messages[1].senderName).toBeUndefined();
   });
+
+  it('переносит статус доставки исходящих сообщений', () => {
+    const [message] = historyToMessages([
+      { type: 'outgoing', idMessage: '1', timestamp: 1, typeMessage: 'textMessage', textMessage: 'а', statusMessage: 'read' },
+    ]);
+    expect(message.status).toBe('read');
+  });
 });
 
 describe('appendMessage', () => {

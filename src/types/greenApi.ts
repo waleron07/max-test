@@ -45,6 +45,7 @@ export type ChatSummary = {
 
 /** https://green-api.com/v3/docs/api/journals/GetChatHistory/ */
 export type HistoryMessage = {
+  statusMessage?: string;
   type?: 'incoming' | 'outgoing';
   idMessage?: string;
   timestamp?: number;
@@ -124,6 +125,9 @@ export type NotificationBody = {
   typeWebhook: WebhookType | string;
   timestamp?: number;
   idMessage?: string;
+  /** В outgoingMessageStatus идентификатор чата и статус лежат в корне уведомления. */
+  chatId?: string;
+  status?: string;
   senderData?: SenderData;
   messageData?: MessageData;
   stateInstance?: InstanceState;

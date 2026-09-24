@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { belongsToChat, toMessage } from '../notifications';
+import { belongsToChat, toMessage, toStatusUpdate } from '../notifications';
 import type { NotificationBody } from '../../types/greenApi';
 import type { Chat } from '../../types/chat';
 
@@ -88,5 +88,33 @@ describe('belongsToChat', () => {
   it('не сопоставляет исходящее уведомление по номеру отправителя', () => {
     const body = { ...incomingText, typeWebhook: 'outgoingMessageReceived' };
     expect(belongsToChat(body, chat)).toBe(false);
+  });
+});
+
+describe('toStatusUpdate', () => {
+  it('читает статус доставки из уведомления', () => {
+    expect(toStatusUpdate({
+      typeWebhook: 'outgoingMessageStatus',
+      chatId: '10000000',
+      idMessage: '115054445839974415',
+      status: 'delivered',
+    })).toEqual({ idMessage: '115054445839974415', status: 'delivered' });
+  });
+
+  it('считает недоставленным сообщение без аккаунта в MAX', () => {
+    expect(toStatusUpdate({
+      typeWebhook: 'outgoingMessageStatus',
+      idMessage: '1',
+      status: 'noAccount',
+    })?.status).toBe('failed');
+  });
+
+  it('игнорирует прочие уведомления и неизвестные статусы', () => {
+    expect(toStatusUpdate({ typeWebhook: 'incomingMessageReceived', idMessage: '1' })).toBeNull();
+    expect(toStatusUpdate({
+      typeWebhook: 'outgoingMessageStatus',
+      idMessage: '1',
+      status: 'whatever',
+    })).toBeNull();
   });
 });

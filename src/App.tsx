@@ -17,7 +17,7 @@ import {
   upsertChat,
 } from './utils/chats';
 import { clearCredentials, loadCredentials, saveCredentials } from './utils/credentialsStorage';
-import { belongsToChat, toMessage } from './utils/notifications';
+import { belongsToChat, toMessage, toStatusUpdate } from './utils/notifications';
 import { buildChatId, canCheckAccount, formatPhone } from './utils/phone';
 import styles from './App.module.css';
 
@@ -62,6 +62,20 @@ export default function App() {
 
   const handleNotification = useCallback(
     (body: NotificationBody) => {
+      const statusUpdate = toStatusUpdate(body);
+      if (statusUpdate) {
+        // Статус ищем по idMessage во всех чатах: chatId уведомления может отличаться от ключа.
+        setMessagesByChat((prev) => Object.fromEntries(
+          Object.entries(prev).map(([chatId, messages]) => [
+            chatId,
+            messages.map((item) =>
+              item.id === statusUpdate.idMessage ? { ...item, status: statusUpdate.status } : item,
+            ),
+          ]),
+        ));
+        return;
+      }
+
       const message = toMessage(body);
       if (!message) {
         return;

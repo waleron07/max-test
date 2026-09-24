@@ -1,7 +1,25 @@
 import { useEffect, useRef } from 'react';
-import type { Message } from '../../types/chat';
+import type { Message, MessageStatus } from '../../types/chat';
 import { formatMessageTime } from '../../utils/notifications';
 import styles from './MessageList.module.css';
+
+/** Как в MAX: одна галочка — отправлено, две — доставлено, две цветные — прочитано. */
+function StatusTicks({ status }: { status?: MessageStatus }) {
+  if (!status || status === 'sending') {
+    return <span className={styles.ticks}>⏱</span>;
+  }
+  if (status === 'failed') {
+    return null;
+  }
+  return (
+    <span
+      className={`${styles.ticks} ${status === 'read' ? styles.read : ''}`}
+      title={status === 'read' ? 'Прочитано' : status === 'delivered' ? 'Доставлено' : 'Отправлено'}
+    >
+      {status === 'sent' ? '✓' : '✓✓'}
+    </span>
+  );
+}
 
 type MessageListProps = {
   messages: Message[];
@@ -36,8 +54,10 @@ export function MessageList({ messages }: MessageListProps) {
           <p className={styles.text}>{message.text}</p>
           <span className={styles.meta}>
             {formatMessageTime(message.timestamp)}
-            {message.status === 'sending' && ' · отправка…'}
             {message.status === 'failed' && ' · не отправлено'}
+            {message.direction === 'outgoing' && message.status !== 'failed' && (
+              <StatusTicks status={message.status} />
+            )}
           </span>
         </article>
       ))}

@@ -1,6 +1,6 @@
 export type MessageDirection = 'incoming' | 'outgoing';
 
-export type MessageStatus = 'sending' | 'sent' | 'failed';
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
 
 export type Message = {
   id: string;
