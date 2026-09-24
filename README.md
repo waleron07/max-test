@@ -30,6 +30,8 @@
 ## Запуск
 
 ```bash
+git clone https://github.com/waleron07/max-test.git
+cd max-test
 npm install
 npm run dev      # http://localhost:5173
 ```
@@ -44,6 +46,13 @@ npm test         # vitest run
 ```
 
 ## Использование
+
+Проверить можно двумя способами:
+
+- **онлайн** — [waleron07.github.io/max-test](https://waleron07.github.io/max-test/) (публикуется на GitHub Pages автоматически при пуше в `main`);
+- **локально** — склонировать репозиторий и выполнить `npm install` и `npm run dev`, см. раздел «Запуск».
+
+Дальше в обоих случаях одинаково:
 
 1. Откройте приложение.
 2. Введите `idInstance` из личного кабинета GREEN-API.
