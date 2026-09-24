@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createGreenApiClient } from './api/greenApi';
 import { toUserMessage } from './api/errors';
 import { Chat } from './components/Chat/Chat';
@@ -27,6 +27,12 @@ export default function App() {
 
   const [chat, setChat] = useState<ChatModel | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+
+  // Ответ sendMessage может прийти уже после закрытия или смены чата — тогда его нельзя применять.
+  const chatRef = useRef(chat);
+  useEffect(() => {
+    chatRef.current = chat;
+  }, [chat]);
   const [isSending, setIsSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
 
@@ -88,6 +94,33 @@ export default function App() {
     setChat({ chatId: buildChatId(phone), phone, title: formatPhone(phone) });
     setMessages([]);
     setChatError(null);
+    void resolveChatId(phone);
+  }
+
+  /**
+   * В MAX канонический chatId — числовой, а отправлять можно и `<phone>@c.us`.
+   * Уточняем его через getContactInfo, чтобы входящие уведомления совпадали по chatId точно;
+   * если метод недоступен, остаётся сопоставление по номеру отправителя.
+   */
+  async function resolveChatId(phone: string) {
+    if (!client) {
+      return;
+    }
+    try {
+      const info = await client.getContactInfo(buildChatId(phone));
+      if (!info?.chatId || chatRef.current?.phone !== phone) {
+        return;
+      }
+      setChat((prev) =>
+        prev?.phone === phone
+          ? { ...prev, chatId: info.chatId, title: info.contactName || info.name || prev.title }
+          : prev,
+      );
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('Не удалось уточнить chatId контакта', error);
+      }
+    }
   }
 
   async function handleSend(text: string) {
@@ -98,7 +131,8 @@ export default function App() {
     setIsSending(true);
     setChatError(null);
 
-    const pendingId = `pending-${Date.now()}`;
+    const targetChatId = chat.chatId;
+    const pendingId = `pending-${crypto.randomUUID()}`;
     const pending: Message = {
       id: pendingId,
       text,
@@ -109,15 +143,24 @@ export default function App() {
     setMessages((prev) => [...prev, pending]);
 
     try {
-      const { idMessage } = await client.sendMessage({ chatId: chat.chatId, message: text });
+      const { idMessage } = await client.sendMessage({ chatId: targetChatId, message: text });
+      if (chatRef.current?.chatId !== targetChatId) {
+        return;
+      }
       setMessages((prev) =>
-        prev.map((item) =>
-          item.id === pendingId ? { ...item, id: idMessage, status: 'sent' } : item,
-        ),
+        // Уведомление об этом же сообщении могло прийти раньше ответа — тогда убираем черновик.
+        prev.some((item) => item.id === idMessage)
+          ? prev.filter((item) => item.id !== pendingId)
+          : prev.map((item) =>
+              item.id === pendingId ? { ...item, id: idMessage, status: 'sent' } : item,
+            ),
       );
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Не удалось отправить сообщение', error);
+      }
+      if (chatRef.current?.chatId !== targetChatId) {
+        return;
       }
       setChatError(toUserMessage(error));
       setMessages((prev) =>

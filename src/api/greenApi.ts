@@ -2,6 +2,7 @@ import { GreenApiError } from './errors';
 import type {
   Credentials,
   DeleteNotificationResponse,
+  GetContactInfoResponse,
   GetStateInstanceResponse,
   Notification,
   SendMessageRequest,
@@ -76,6 +77,16 @@ export function createGreenApiClient({ idInstance, apiTokenInstance, apiUrl }: C
         throw new GreenApiError('GREEN-API не вернул состояние инстанса.');
       }
       return data;
+    },
+
+    /** https://green-api.com/v3/docs/api/service/GetContactInfo/ */
+    async getContactInfo(chatId: string, signal?: AbortSignal): Promise<GetContactInfoResponse | null> {
+      return request<GetContactInfoResponse>({
+        method: 'POST',
+        apiMethod: 'getContactInfo',
+        body: { chatId },
+        signal,
+      });
     },
 
     /** https://green-api.com/v3/docs/api/sending/SendMessage/ */

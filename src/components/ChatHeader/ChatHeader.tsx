@@ -9,15 +9,18 @@ type ChatHeaderProps = {
 };
 
 export function ChatHeader({ chat, isListening, onClose }: ChatHeaderProps) {
+  const phone = formatPhone(chat.phone);
+
   return (
     <header className={styles.header}>
       <div className={styles.avatar} aria-hidden="true">
-        {chat.title.slice(-2)}
+        {chat.title.replace('+', '').slice(0, 2)}
       </div>
       <div className={styles.info}>
-        <span className={styles.name}>{formatPhone(chat.phone)}</span>
+        <span className={styles.name}>{chat.title}</span>
         <span className={styles.status}>
-          {isListening ? 'Слушаем входящие сообщения' : 'Получение сообщений остановлено'}
+          {chat.title !== phone && `${phone} · `}
+          {isListening ? 'приём сообщений включён' : 'приём сообщений остановлен'}
         </span>
       </div>
       <button className={styles.close} type="button" onClick={onClose}>

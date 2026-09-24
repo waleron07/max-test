@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import styles from './MessageInput.module.css';
 
 const MAX_MESSAGE_LENGTH = 4000;
@@ -23,7 +23,7 @@ export function MessageInput({ onSend, isSending }: MessageInputProps) {
     textareaRef.current?.focus();
   }
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       submit();

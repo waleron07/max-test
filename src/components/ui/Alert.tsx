@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react';
 import styles from './Alert.module.css';
 
 type AlertProps = {
   kind?: 'error' | 'info';
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 export function Alert({ kind = 'error', children }: AlertProps) {

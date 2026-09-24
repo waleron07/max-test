@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { DEFAULT_API_URL } from '../../api/greenApi';
 import type { Credentials } from '../../types/greenApi';
 import { Alert } from '../ui/Alert';
@@ -17,7 +17,7 @@ export function CredentialsForm({ onConnect, isConnecting, error }: CredentialsF
 
   const isValid = Boolean(idInstance.trim() && apiTokenInstance.trim() && apiUrl.trim());
 
-  function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!isValid || isConnecting) {
       return;

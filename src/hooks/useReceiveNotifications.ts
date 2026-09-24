@@ -45,6 +45,7 @@ export function useReceiveNotifications(
       return;
     }
 
+    const activeClient = client;
     const controller = new AbortController();
     const { signal } = controller;
     let failures = 0;
@@ -52,7 +53,7 @@ export function useReceiveNotifications(
     async function poll() {
       while (!signal.aborted) {
         try {
-          const notification = await client!.receiveNotification(signal);
+          const notification = await activeClient.receiveNotification(signal);
           failures = 0;
           setError(null);
 
@@ -69,7 +70,7 @@ export function useReceiveNotifications(
           }
 
           // Уведомление обязательно удаляем, иначе очередь не сдвинется.
-          const deleted = await client!.deleteNotification(notification.receiptId, signal);
+          const deleted = await activeClient.deleteNotification(notification.receiptId, signal);
           if (!deleted.result && import.meta.env.DEV) {
             console.warn('deleteNotification вернул false', notification.receiptId, deleted.reason);
           }

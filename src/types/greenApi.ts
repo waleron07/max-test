@@ -34,6 +34,15 @@ export type SendMessageResponse = {
 };
 
 /** https://green-api.com/v3/docs/api/receiving/technology-http-api/DeleteNotification/ */
+/** https://green-api.com/v3/docs/api/service/GetContactInfo/ */
+export type GetContactInfoResponse = {
+  chatId: string;
+  chatType?: string;
+  name?: string;
+  contactName?: string;
+  phoneNumber?: number | string;
+};
+
 export type DeleteNotificationResponse = {
   result: boolean;
   reason?: string;

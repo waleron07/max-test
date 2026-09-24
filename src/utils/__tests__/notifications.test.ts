@@ -66,6 +66,12 @@ describe('belongsToChat', () => {
     expect(belongsToChat(incomingText, chat)).toBe(true);
   });
 
+  it('сопоставляет уведомление по каноническому chatId, полученному из getContactInfo', () => {
+    const resolved = { ...chat, chatId: '10000000' };
+    const body = { ...incomingText, senderData: { chatId: '10000000' } };
+    expect(belongsToChat(body, resolved)).toBe(true);
+  });
+
   it('сопоставляет уведомление по chatId', () => {
     const body = { ...incomingText, senderData: { chatId: '79991234567@c.us' } };
     expect(belongsToChat(body, chat)).toBe(true);

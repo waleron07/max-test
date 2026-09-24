@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { isValidPhone, normalizePhone } from '../../utils/phone';
 import { Alert } from '../ui/Alert';
 import styles from './NewChatForm.module.css';
@@ -12,7 +12,7 @@ export function NewChatForm({ onOpenChat, disabled = false }: NewChatFormProps) 
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (disabled) {
       return;
