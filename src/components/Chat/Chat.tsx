@@ -14,6 +14,7 @@ type ChatProps = {
   error: string | null;
   onSend: (text: string) => void;
   onBack: () => void;
+  onRefresh: () => void;
 };
 
 export function Chat({
@@ -25,10 +26,17 @@ export function Chat({
   error,
   onSend,
   onBack,
+  onRefresh,
 }: ChatProps) {
   return (
     <section className={styles.chat}>
-      <ChatHeader chat={chat} isListening={isListening} onBack={onBack} />
+      <ChatHeader
+        chat={chat}
+        isListening={isListening}
+        isRefreshing={isLoadingHistory}
+        onBack={onBack}
+        onRefresh={onRefresh}
+      />
       {isLoadingHistory ? (
         <p className={styles.loading}>Загружаем историю сообщений…</p>
       ) : (

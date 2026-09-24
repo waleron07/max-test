@@ -69,7 +69,7 @@ export function useReceiveNotifications(
           }
 
           if (import.meta.env.DEV) {
-            console.debug(
+            console.info(
               'Уведомление GREEN-API',
               notification.body.typeWebhook,
               notification.body.senderData?.chatId,

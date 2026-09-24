@@ -54,3 +54,26 @@
     display: block;
   }
 }
+
+.refresh {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  font: inherit;
+  font-size: 17px;
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.refresh:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -224,8 +224,8 @@ export default function App() {
   }
 
   /** История подгружается один раз на чат: дальше список пополняют уведомления. */
-  async function loadHistory(chatId: string) {
-    if (!client || loadedHistories[chatId]) {
+  async function loadHistory(chatId: string, force = false) {
+    if (!client || (!force && loadedHistories[chatId])) {
       return;
     }
     setLoadingHistoryFor(chatId);
@@ -233,7 +233,7 @@ export default function App() {
       const history = await client.getChatHistory(chatId);
       const messages = historyToMessages(history);
       if (import.meta.env.DEV) {
-        console.debug(`История ${chatId}: получено ${history.length}, текстовых ${messages.length}`);
+        console.info(`История ${chatId}: получено ${history.length}, текстовых ${messages.length}`);
       }
       setLoadedHistories((prev) => ({ ...prev, [chatId]: true }));
       setMessagesByChat((prev) => ({
@@ -441,6 +441,7 @@ export default function App() {
               error={chatError}
               onSend={handleSend}
               onBack={() => setActiveChatId(null)}
+              onRefresh={() => void loadHistory(activeChat.chatId, true)}
             />
           ) : (
             <div className={styles.placeholder}>

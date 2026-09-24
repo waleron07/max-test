@@ -5,10 +5,18 @@ import styles from './ChatHeader.module.css';
 type ChatHeaderProps = {
   chat: Chat;
   isListening: boolean;
+  isRefreshing: boolean;
   onBack: () => void;
+  onRefresh: () => void;
 };
 
-export function ChatHeader({ chat, isListening, onBack }: ChatHeaderProps) {
+export function ChatHeader({
+  chat,
+  isListening,
+  isRefreshing,
+  onBack,
+  onRefresh,
+}: ChatHeaderProps) {
   const phone = formatPhone(chat.phone);
 
   return (
@@ -26,6 +34,16 @@ export function ChatHeader({ chat, isListening, onBack }: ChatHeaderProps) {
           {isListening ? 'приём сообщений включён' : 'приём сообщений остановлен'}
         </span>
       </div>
+      <button
+        className={styles.refresh}
+        type="button"
+        onClick={onRefresh}
+        disabled={isRefreshing}
+        title="Обновить историю сообщений"
+        aria-label="Обновить историю сообщений"
+      >
+        ⟳
+      </button>
     </header>
   );
 }
