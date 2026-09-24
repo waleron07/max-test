@@ -39,11 +39,15 @@ export function toMessage(body: NotificationBody): Message | null {
     return null;
   }
 
-  if (body.messageData?.typeMessage !== 'textMessage') {
+  const messageData = body.messageData;
+  if (messageData?.typeMessage !== 'textMessage'
+    && messageData?.typeMessage !== 'extendedTextMessage') {
     return null;
   }
 
-  const text = body.messageData.textMessageData?.textMessage;
+  // Сообщение со ссылкой приходит как extendedTextMessage — для чата это тот же текст.
+  const text = messageData.textMessageData?.textMessage
+    ?? messageData.extendedTextMessageData?.text;
   if (typeof text !== 'string' || !text) {
     return null;
   }

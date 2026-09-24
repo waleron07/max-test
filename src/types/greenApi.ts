@@ -35,9 +35,13 @@ export type SendMessageResponse = {
 };
 
 /** https://green-api.com/v3/docs/api/receiving/technology-http-api/DeleteNotification/ */
-/** https://green-api.com/v3/docs/api/service/GetChats/ */
+/**
+ * https://green-api.com/v3/docs/api/service/GetChats/
+ * В MAX идентификатор приходит в `chatId`, в WhatsApp — в `id`.
+ */
 export type ChatSummary = {
-  chatId: string;
+  chatId?: string;
+  id?: string;
   name?: string;
   type?: string;
   phoneNumber?: number | string;
@@ -46,6 +50,7 @@ export type ChatSummary = {
 /** https://green-api.com/v3/docs/api/journals/GetChatHistory/ */
 export type HistoryMessage = {
   statusMessage?: string;
+  extendedTextMessage?: ExtendedTextMessageData;
   type?: 'incoming' | 'outgoing';
   idMessage?: string;
   timestamp?: number;
@@ -112,9 +117,15 @@ export type TextMessageData = {
   textMessage: string;
 };
 
+/** https://green-api.com/v3/docs/api/receiving/notifications-format/outgoing-message/ExtendedTextMessage/ */
+export type ExtendedTextMessageData = {
+  text?: string;
+};
+
 export type MessageData = {
   typeMessage: string;
   textMessageData?: TextMessageData;
+  extendedTextMessageData?: ExtendedTextMessageData;
 };
 
 /**

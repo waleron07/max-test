@@ -13,6 +13,15 @@ describe('toChat', () => {
       .toBe('+79991234567');
   });
 
+  it('понимает формат WhatsApp, где идентификатор лежит в id', () => {
+    expect(toChat({ id: '79876543210@c.us', name: 'John Doe', type: 'user' }))
+      .toEqual({ chatId: '79876543210@c.us', phone: '79876543210', title: 'John Doe' });
+  });
+
+  it('отбрасывает групповые чаты WhatsApp по суффиксу @g.us', () => {
+    expect(toChat({ id: '79001234567-1581234048@g.us', name: 'Группа' })).toBeNull();
+  });
+
   it('отбрасывает группы и каналы', () => {
     expect(toChat({ chatId: '-100', name: 'Группа', type: 'group' })).toBeNull();
   });
@@ -53,6 +62,19 @@ describe('historyToMessages', () => {
       senderName: 'Иван',
     });
     expect(messages[1].senderName).toBeUndefined();
+  });
+
+  it('берёт текст сообщения со ссылкой из extendedTextMessage', () => {
+    const [message] = historyToMessages([
+      {
+        type: 'incoming',
+        idMessage: '1',
+        timestamp: 1,
+        typeMessage: 'extendedTextMessage',
+        extendedTextMessage: { text: 'https://green-api.com' },
+      },
+    ]);
+    expect(message.text).toBe('https://green-api.com');
   });
 
   it('переносит статус доставки исходящих сообщений', () => {

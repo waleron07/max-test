@@ -5,14 +5,17 @@ import { formatPhone, normalizePhone } from './phone';
 
 /** Личные чаты; группы и каналы заданием не предусмотрены. */
 export function toChat(summary: ChatSummary): Chat | null {
-  if (!summary.chatId || (summary.type && summary.type !== 'user')) {
+  const chatId = summary.chatId ?? summary.id;
+  const isGroup = (summary.type && summary.type !== 'user') || chatId?.endsWith('@g.us');
+  if (!chatId || isGroup) {
     return null;
   }
-  const phone = normalizePhone(summary.phoneNumber);
+  // У WhatsApp номер телефона отдельным полем не приходит — он и есть идентификатор чата.
+  const phone = normalizePhone(summary.phoneNumber) || normalizePhone(chatId.split('@')[0]);
   return {
-    chatId: summary.chatId,
+    chatId,
     phone,
-    title: summary.name || formatPhone(phone) || summary.chatId,
+    title: summary.name || formatPhone(phone) || chatId,
   };
 }
 
@@ -37,13 +40,13 @@ export function chatFromNotification(body: NotificationBody): Chat | null {
 /** Из ответа GetChatHistory оставляем только текстовые сообщения, от старых к новым. */
 export function historyToMessages(history: HistoryMessage[]): Message[] {
   return history
-    .filter((item): item is HistoryMessage & { idMessage: string; textMessage: string } =>
-      item.typeMessage === 'textMessage'
+    .filter((item): item is HistoryMessage & { idMessage: string } =>
+      (item.typeMessage === 'textMessage' || item.typeMessage === 'extendedTextMessage')
       && Boolean(item.idMessage)
-      && Boolean(item.textMessage))
+      && Boolean(item.textMessage ?? item.extendedTextMessage?.text))
     .map((item) => ({
       id: item.idMessage,
-      text: item.textMessage,
+      text: item.textMessage ?? item.extendedTextMessage?.text ?? '',
       direction: item.type === 'incoming' ? ('incoming' as const) : ('outgoing' as const),
       timestamp: item.timestamp ?? 0,
       senderName: item.type === 'incoming'

@@ -45,6 +45,16 @@ describe('toMessage', () => {
     expect(toMessage({ typeWebhook: 'outgoingMessageStatus', idMessage: '1' })).toBeNull();
   });
 
+  it('читает сообщение со ссылкой из extendedTextMessageData', () => {
+    expect(toMessage({
+      ...incomingText,
+      messageData: {
+        typeMessage: 'extendedTextMessage',
+        extendedTextMessageData: { text: 'https://green-api.com' },
+      },
+    })?.text).toBe('https://green-api.com');
+  });
+
   it('игнорирует нетекстовые сообщения', () => {
     expect(
       toMessage({ ...incomingText, messageData: { typeMessage: 'imageMessage' } }),
